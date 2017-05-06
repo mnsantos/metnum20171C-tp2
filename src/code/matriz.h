@@ -11,6 +11,11 @@ private:
     vector< vector<double> > data;
     int cantFilas;
     int cantColumnas;
+    Matriz randomVector(unsigned int n);
+    pair<double, Matriz> metodoPotencia();
+    Matriz deflacion(double autovalor, Matriz autovector);
+    static const int niter = 1000;
+    static const double epsilon = 1;
 
 public:
     //construye una matriz de tamaño v * 1
@@ -29,6 +34,7 @@ public:
     bool esTriangularSuperior();
     bool esTriangularInferior();
     Matriz trasponer();
+    pair<vector<double>, vector<vector<double> > > calcularAutovectores(int alfa);
 };
 
 ostream& operator<<(ostream& os, Matriz& m);
