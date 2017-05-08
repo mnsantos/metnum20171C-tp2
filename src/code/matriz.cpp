@@ -1,6 +1,8 @@
 #include "matriz.h"
 #include <stdexcept>
 #include <math.h>
+#include <cmath>  
+#include <cstdlib>
 
 using namespace std;
 
@@ -33,9 +35,9 @@ int Matriz::columnas() {
 }
 
 Matriz Matriz::trasponer() {
-  Matriz C = Matriz(cantFilas, cantColumnas);
-  for (int i=0; i<cantFilas; i++){
-    for (int j=0; j<cantColumnas; j++){
+  Matriz C = Matriz(cantColumnas, cantFilas);
+  for (int i=0; i<cantColumnas; i++){
+    for (int j=0; j<cantFilas; j++){
       C[i][j] = data[j][i];
     }
   }
@@ -159,41 +161,91 @@ Matriz Matriz::cholesky() {
   return L;
 }
 
-vector<double, vector<double> > metodoPotencia(int niter, double epsilon) {
-  //MetodoPotencia(B,x 0 ,niter)
+double norma2(Matriz& v) {
+  double sum = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    sum = sum + pow(v[i][0],2);
+  }
+  return sqrt(sum);
+}
 
+double norma1(Matriz& v) {
+  double sum = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    sum = sum + abs(v[i][0]);
+  }
+  return sum;
+}
+
+double normaInf(Matriz& v) {
+  double max = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    if (max < abs(v[i][0])) {
+      max = v[i][0];
+    }
+  }
+  return max;
+}
+
+
+pair<double, Matriz> Matriz::metodoPotencia() {
+  //MetodoPotencia(B,x 0 ,niter)
+  //cout << (*this) << endl;
   //v ← x0
-  v = randVector(B.size());
+  Matriz v = randomVector(cantColumnas);
   //Para i = 1, . . . , niter
   for (int i = 0; i < niter; i++) {
-    v = B * v;
+    v = this->operator*(v);
+    //cout << v << endl;
     //norma 2
-    double sum = 0;
-    for (int i=0; i<v.filas(); i++) {
-      sum = sum + pow(v[i],2);
-    }
-    double norma = sum / tmp.filas();
-
-    for (int i=0; i<v.filas(); v++) {
-      v[i] = v[i] / norma;
+    double norma = norma2(v);
+    for (int j=0; j<v.filas(); j++) {
+      v[j][0] = v[j][0] / norma;
     }
   }
 
   Matriz v_t = v.trasponer();
-  double lambda = (v_t * this * v) / (v_t * v);
+  double lambda = (v_t * (*this) * v)[0][0] / (v_t * v)[0][0];
 
   //Devolver λ, v .
-  return ;
+  return make_pair(lambda, v);
+}
+
+pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int alfa) {
+  vector<double> autovalores;
+  vector< vector<double> > autovectores;
+  Matriz A = (*this);
+  for (int i = 0; i < alfa; ++i) {
+    pair<double, Matriz> tuple = A.metodoPotencia();
+    autovalores.push_back(tuple.first);
+    //cout << tuple.first << endl;
+    autovectores.push_back(tuple.second.trasponer()[0]);
+    A = A.deflacion(tuple.first, tuple.second);
+    //cout << A << endl;
+  }
+  return make_pair(autovalores, autovectores);
+}
+
+Matriz Matriz::deflacion(double autovalor, Matriz autovector) {
+  //cout << autovector << endl;
+  //cout << autovalor << endl;
+  Matriz autovector_t = autovector.trasponer();
+  //cout << autovector_t << endl;
+  Matriz B = autovector * autovector_t;
+  //cout<< B << endl;
+  Matriz BxAutovalor = B * autovalor;
+  //cout << BxAutovalor << endl;
+  return ((*this) - BxAutovalor);
 }
 
 
-vector<double> randomVector(unsigned int n) {
-  vector<double> vRand(n, 0.0);
-  srand(1);
+Matriz Matriz::randomVector(unsigned int n) {
+  Matriz v = Matriz(n, 1);
+  srand(clock());
   for (unsigned int i = 0; i < n; i++) {
-    vRand[i] = (rand() % 100) / 100.0;
+    v[i][0] = (rand() % 100) / 100.0;
   }
-  return vRand;
+  return v;
 }
 
 ostream& operator<<(ostream& os, Matriz& m) {
