@@ -161,24 +161,46 @@ Matriz Matriz::cholesky() {
   return L;
 }
 
+double norma2(Matriz& v) {
+  double sum = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    sum = sum + pow(v[i][0],2);
+  }
+  return sqrt(sum);
+}
+
+double norma1(Matriz& v) {
+  double sum = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    sum = sum + abs(v[i][0]);
+  }
+  return sum;
+}
+
+double normaInf(Matriz& v) {
+  double max = 0.0;
+  for (int i=0; i<v.filas(); i++) {
+    if (max < abs(v[i][0])) {
+      max = v[i][0];
+    }
+  }
+  return max;
+}
+
+
 pair<double, Matriz> Matriz::metodoPotencia() {
   //MetodoPotencia(B,x 0 ,niter)
   //cout << (*this) << endl;
   //v ← x0
   Matriz v = randomVector(cantColumnas);
-  //cout << v << endl;
   //Para i = 1, . . . , niter
   for (int i = 0; i < niter; i++) {
     v = this->operator*(v);
+    //cout << v << endl;
     //norma 2
-    double sum = 0.0;
-    for (int i=0; i<cantColumnas; i++) {
-      sum = sum + pow(v[0][i],2);
-    }
-    double norma = sqrt(sum);
-
-    for (int i=0; i<cantColumnas; i++) {
-      v[0][i] = v[0][i] / norma;
+    double norma = norma2(v);
+    for (int j=0; j<v.filas(); j++) {
+      v[j][0] = v[j][0] / norma;
     }
   }
 

@@ -14,7 +14,7 @@ private:
     Matriz randomVector(unsigned int n);
     pair<double, Matriz> metodoPotencia();
     Matriz deflacion(double autovalor, Matriz autovector);
-    static const int niter = 1000;
+    static const int niter = 100;
     static const double epsilon = 1;
 
 public:
