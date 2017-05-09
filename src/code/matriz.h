@@ -24,6 +24,9 @@ public:
     Matriz(int filas, int columnas);
     int filas();
     int columnas();
+    void agregarFila(vector<double> & v);
+    void quitarUltFila();
+    vector<double> ultFila();
     Matriz cholesky();
     vector<double>& operator[] (int i);
     Matriz operator +(Matriz& m2);

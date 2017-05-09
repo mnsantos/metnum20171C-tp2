@@ -7,7 +7,6 @@
 #include <fstream>
 #include <stdio.h>
 #include <map>
-#include "team.h"
 
 using namespace std;
 
@@ -20,6 +19,7 @@ struct Parametros {
 	int p; // cantidad de personas
 	int nimgp; // cantidad de imagenes por persona
 	int k; // cantidad de componentes principales
+	int ntest; //cantidad de imagenes de test
 };
 
 #endif
