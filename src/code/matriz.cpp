@@ -34,6 +34,25 @@ int Matriz::columnas() {
   return cantColumnas;
 }
 
+void Matriz::agregarFila(vector<double> & v){
+  vector<double> fila;
+  for (int i = 0; i < v.size(); ++i)
+  {
+    fila.push_back(v[i]);
+  }
+  data.push_back(fila);
+  cantFilas++;
+}
+
+void Matriz::quitarUltFila(){
+  data.pop_back();
+  cantFilas--;
+}
+
+vector<double> Matriz::ultFila(){
+  return data.back();
+}
+
 Matriz Matriz::trasponer() {
   Matriz C = Matriz(cantColumnas, cantFilas);
   for (int i=0; i<cantColumnas; i++){
