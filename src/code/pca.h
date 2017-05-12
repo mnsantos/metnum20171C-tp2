@@ -8,7 +8,7 @@ class PCA {
     public:
         PCA();
         PCA(Matriz& imagenes, vector<double>& labels, int vecinos, int alfa);
-        vector<double> autovalores();
+        vector<double> getAutovalores();
         int clasificar(vector<double>& imagen, int metodo);
 
     private:
@@ -20,12 +20,11 @@ class PCA {
         vector<double> labels;
 
         //metodos privados auxiliares
-        Matriz calcularX(Matriz& imagenes);
+        Matriz calcularX(Matriz& imagenes, vector<double>& media);
         vector<double> calcularMedia(Matriz& M);
         vector<double> tc(vector<double>& imagen);
 
+        double distancia(vector<double>& xprima, vector<double>& imagenTransformada);
         int metodo1(vector<double>& xprima);
-        int metodo2(vector<double>& xprima);
-
-
+        int metodo2(vector<double>& xprima, int vecinos);
 };
