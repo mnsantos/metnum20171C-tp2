@@ -34,17 +34,15 @@ vector<double> leerArchivoImagen(string archivoImagen, Parametros params){
 		archivoEntrada >> linea;
 		
 		archivoEntrada >> linea;
-		cout << linea << endl;
+		//cout << linea << endl;
 		vector<double> vectorImagen;
 		stringstream ss(linea);
-		int n;
-		char ch;
+		unsigned char n;
 
 		while(ss >> n) {
-			if(ss >> ch)
-				vectorImagen.push_back(n);
-			else
-				vectorImagen.push_back(n);
+			//cout << "char : " << n << endl;
+			//cout << "uint : " << (unsigned int) n << endl;
+			vectorImagen.push_back((double) n);
 		}
 	}
 	return vectorImagen;
@@ -119,11 +117,11 @@ int main(int argc, char const *argv[])
 
 	Matriz A = cargarImagenesTrain(archivoEntrada, params);
 
-/*	
+	/*
 	cout << "inicio A" << endl;
 	cout << A << endl;
 	cout << "final A" << endl;
-*/
+	*/
 	//vector<double> labels = A.ultFila();
 	//A.quitarUltFila();
 
