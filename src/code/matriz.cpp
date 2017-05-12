@@ -35,13 +35,9 @@ int Matriz::columnas() {
 }
 
 void Matriz::agregarFila(vector<double> & v){
-  vector<double> fila;
-  for (int i = 0; i < v.size(); ++i)
-  {
-    fila.push_back(v[i]);
-  }
-  data.push_back(fila);
+  data.push_back(v);
   cantFilas++;
+  cantColumnas = v.size();
 }
 
 void Matriz::quitarUltFila(){
