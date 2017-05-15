@@ -22,28 +22,20 @@ Parametros leerParametros(ifstream &archivoEntrada, string infile){
 vector<double> leerArchivoImagen(string archivoImagen, Parametros params){
 	string linea;
 	ifstream archivoEntrada;
-	vector<double> vectorImagen = vector<double>(params.f * params.c);
+	vector<double> vectorImagen;
 	archivoEntrada.open(archivoImagen.c_str());
+	cout << archivoImagen.c_str() << endl;
 	if(archivoEntrada.fail()){
 		cout << "Falla Archivo de imagen: " << archivoImagen << endl;
 		exit(0);
-	} else{
-		archivoEntrada >> linea;
-		archivoEntrada >> linea;
-		archivoEntrada >> linea;
-		archivoEntrada >> linea;
-		
-		archivoEntrada >> linea;
-		//cout << linea << endl;
-		vector<double> vectorImagen;
-		stringstream ss(linea);
+	} else {
 		unsigned char n;
-
-		while(ss >> n) {
+		while(archivoEntrada >> n) {
 			//cout << "char : " << n << endl;
 			//cout << "uint : " << (unsigned int) n << endl;
 			vectorImagen.push_back((double) n);
 		}
+		//cout << "size: " << vectorImagen.size() << endl;
 	}
 	return vectorImagen;
 }
@@ -57,7 +49,7 @@ Matriz cargarImagenesTrain(ifstream &archivoEntrada, Parametros params){
 	{
 		//i-esima persona
 		archivoEntrada >> directorioPersona;
-		for (int j = 0; j < params.nimgp; ++j)
+		for (int j = 0; j < 1; ++j)
 		{
 			//j-esima imagen
 			archivoEntrada >> numeroImagen;
