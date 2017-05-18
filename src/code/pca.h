@@ -7,7 +7,7 @@ class PCA {
 
     public:
         PCA();
-        PCA(Matriz& imagenes, vector<double>& labels, int vecinos, int alfa);
+        PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa);
         vector<double> getAutovalores();
         int clasificar(vector<double>& imagen, int metodo);
 
@@ -17,7 +17,7 @@ class PCA {
         vector< vector<double> > imagenesTransformadas;
         int alfa;
         int vecinos;
-        vector<double> labels;
+        vector<int> labels;
 
         //metodos privados auxiliares
         Matriz calcularX(Matriz& imagenes, vector<double>& media);

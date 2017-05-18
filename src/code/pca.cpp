@@ -58,7 +58,7 @@ vector<double> PCA::getAutovalores() {
     return autovalores;
 }
 
-PCA::PCA(Matriz& imagenes, vector<double>& labels, int vecinos, int alfa) {
+PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
     vector<double> media = calcularMedia(imagenes);
     Matriz X = calcularX(imagenes, media);
     Matriz X_t = X.trasponer();

@@ -23,49 +23,50 @@ vector<double> leerArchivoImagen(string archivoImagen, Parametros params){
 	string linea;
 	ifstream archivoEntrada;
 	vector<double> vectorImagen;
-	archivoEntrada.open(archivoImagen.c_str());
-	cout << archivoImagen.c_str() << endl;
+	archivoImagen += ".dat";
+	archivoEntrada.open(archivoImagen.c_str(), ios::binary);
+	int count = 0;
 	if(archivoEntrada.fail()){
 		cout << "Falla Archivo de imagen: " << archivoImagen << endl;
 		exit(0);
 	} else {
-		unsigned char n;
-		while(archivoEntrada >> n) {
-			//cout << "char : " << n << endl;
-			//cout << "uint : " << (unsigned int) n << endl;
-			vectorImagen.push_back((double) n);
+		for (std::string line; std::getline(archivoEntrada, line); ){
+			// process "line"
+			std::stringstream ss(line);
+			std::string token;
+
+			while(std::getline(ss, token, ',')) {
+				vectorImagen.push_back(atoi(token.c_str()));
+			}
 		}
-		//cout << "size: " << vectorImagen.size() << endl;
+
 	}
 	return vectorImagen;
 }
 
-Matriz cargarImagenesTrain(ifstream &archivoEntrada, Parametros params){
+Matriz cargarImagenesTrain(ifstream &archivoEntrada, Parametros params, vector<int>* labels){
 	Matriz imagenesTrain;
-	vector<double> labels;
 	string directorioPersona;
 	string numeroImagen;
 	for (int i = 0; i < params.p; ++i)
 	{
 		//i-esima persona
 		archivoEntrada >> directorioPersona;
-		for (int j = 0; j < 1; ++j)
+		for (int j = 0; j < params.nimgp; ++j)
 		{
 			//j-esima imagen
 			archivoEntrada >> numeroImagen;
 			vector<double> vectorArchivoImagen = leerArchivoImagen(params.path + directorioPersona + numeroImagen +".pgm", params);
 			imagenesTrain.agregarFila(vectorArchivoImagen);
-			labels.push_back(atof(directorioPersona.substr(2,-1).c_str()));
+			labels->push_back(atof(directorioPersona.substr(1, directorioPersona.size()).c_str()));
 		}
 	}
-	//imagenesTrain.agregarFila(labels);
 	return imagenesTrain;
 }
 
-Matriz cargarImagenesTest(ifstream &archivoEntrada, Parametros params){
+Matriz cargarImagenesTest(ifstream &archivoEntrada, Parametros params, vector<int>* labels){
 	Matriz imagenesTest;
 	string imagenTest;
-	vector<double> labels;
 	int sujeto;
 	archivoEntrada >> params.ntest;
 	for (int i = 0; i < params.ntest; ++i)
@@ -74,13 +75,12 @@ Matriz cargarImagenesTest(ifstream &archivoEntrada, Parametros params){
 		archivoEntrada >> sujeto;
 		vector<double> vectorArchivoImagen = leerArchivoImagen(imagenTest, params);
 		imagenesTest.agregarFila(vectorArchivoImagen);
-		labels.push_back(sujeto);
+		labels->push_back(sujeto);
 	}
-	//imagenesTest.agregarFila(labels);
 	return imagenesTest;
 }
 
-vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<double> labels, PCA pca){
+vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<int> labels, PCA pca){
 	vector<pair<int, int> > resultados;
 	for (int i = 0; i < imagenes.filas(); ++i)
 	{
@@ -93,10 +93,10 @@ vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<double> label
 	return resultados;
 }
 
-
-
 int main(int argc, char const *argv[])
 {
+	int vecinos = 1;
+	int alpha = 1;
 	string infile = argv[1];
 	ifstream archivoEntrada;
 	archivoEntrada.open(infile.c_str());
@@ -107,26 +107,25 @@ int main(int argc, char const *argv[])
 
 	Parametros params = leerParametros(archivoEntrada, infile);
 
-	Matriz A = cargarImagenesTrain(archivoEntrada, params);
+	vector<int>* labelsTrain = new vector<int>();
+	
+	Matriz A = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
-	/*
-	cout << "inicio A" << endl;
+/*	cout << "inicio A" << endl;
 	cout << A << endl;
-	cout << "final A" << endl;
-	*/
-	//vector<double> labels = A.ultFila();
-	//A.quitarUltFila();
+	cout << "final A" << endl;*/
 
-	//PCA pca_ = PCA(A, labels, vecinos, alpha);
+	//PCA pca_ = PCA(A, (*labelsTrain), vecinos, alpha);
+	vector<int>* labelsTest = new vector<int>();
 
-	Matriz T = cargarImagenesTest(archivoEntrada, params);
+	Matriz T = cargarImagenesTest(archivoEntrada, params, labelsTest);
 
-	//labels = T.ultFila();
-	//T.quitarUltFila();
+	//vector<pair<int, int> > clasificadas = clasificarImagenes(T, (*labelsTest), pca_);
 
-	//vector<pair<int, int> > clasificadas = clasificarImagenes(T, labels, pca);
-
-	//salida = pca_.autovalores();
+	//salida = pca_.getAutovalores();
+	
+	delete labelsTrain;
+	delete labelsTest;
 
 	cout << "salida" << endl;
 	return 0;
