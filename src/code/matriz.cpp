@@ -59,7 +59,7 @@ Matriz Matriz::trasponer() {
   return C;
 }
 
-vector<double>& Matriz:: operator [](int i) {
+vector<double>& Matriz:: operator [](int i){
   return data[i];
 }
 
@@ -97,9 +97,8 @@ Matriz Matriz:: operator *(Matriz& m2) {
   Matriz C = Matriz(this -> filas(), m2.columnas());
   for(int i=0;i<this->filas();i++){
     for(int j=0;j<m2.columnas();j++){
-      C[i][j]=0;
       for(int k=0;k<this->columnas();k++){
-        C[i][j]=C[i][j]+(data[i][k] * m2[k][j]);
+        C[i][j] += data[i][k] * m2[k][j];
       }
     }
   }
@@ -131,7 +130,7 @@ Matriz Matriz:: operator *(double n) {
   return C;
 }
 
-bool Matriz::esTriangularSuperior(){
+bool Matriz::esTriangularSuperior() {
   for (int i=0; i<this->filas(); i++){
     for (int j=0; j<i-1; j++){
       if (data[i][j] != 0){
@@ -142,7 +141,7 @@ bool Matriz::esTriangularSuperior(){
   return true;
 }
 
-bool Matriz::esTriangularInferior(){
+bool Matriz::esTriangularInferior() {
   for (int i=0; i<cantFilas; i++){
     for (int j=i+1; j<cantColumnas; j++){
       if (data[i][j] != 0){
@@ -176,7 +175,7 @@ Matriz Matriz::cholesky() {
   return L;
 }
 
-double norma2(Matriz& v) {
+double norma2( Matriz& v) {
   double sum = 0.0;
   for (int i=0; i<v.filas(); i++) {
     sum = sum + pow(v[i][0],2);
@@ -226,11 +225,12 @@ pair<double, Matriz> Matriz::metodoPotencia() {
   return make_pair(lambda, v);
 }
 
-pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int alfa) {
+pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int alfa)  {
   vector<double> autovalores;
   vector< vector<double> > autovectores;
   Matriz A = (*this);
   for (int i = 0; i < alfa; ++i) {
+    cout << "calculando autovector " << i << endl;
     pair<double, Matriz> tuple = A.metodoPotencia();
     autovalores.push_back(tuple.first);
     //cout << tuple.first << endl;
@@ -241,7 +241,7 @@ pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int 
   return make_pair(autovalores, autovectores);
 }
 
-Matriz Matriz::deflacion(double autovalor, Matriz autovector) {
+Matriz Matriz::deflacion(double autovalor, Matriz& autovector)  {
   //cout << autovector << endl;
   //cout << autovalor << endl;
   Matriz autovector_t = autovector.trasponer();

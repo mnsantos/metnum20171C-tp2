@@ -30,6 +30,7 @@ double norma2(vector<double>& a) {
 }
 
 vector<double> PCA::calcularMedia(Matriz& M) {
+    cout << "calcular media" << endl;
     vector<double> medias;
     for(int i=0; i<M.columnas(); i++){
         double media = 0;
@@ -42,8 +43,10 @@ vector<double> PCA::calcularMedia(Matriz& M) {
 }
 
 Matriz PCA::calcularX(Matriz& imagenes, vector<double>& media) {
+    cout << "calcular X" << endl;
     int n = imagenes.filas();
     int m = imagenes.columnas();
+    cout << "n " << n << " m " << m << endl;
     Matriz X = Matriz(n, m);
     for(int i=0; i<n; i++){
         X[i] = restarVectores(imagenes[i], media);
@@ -61,9 +64,12 @@ vector<double> PCA::getAutovalores() {
 PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
     vector<double> media = calcularMedia(imagenes);
     Matriz X = calcularX(imagenes, media);
+    cout << "trasponiendo X" << endl;
     Matriz X_t = X.trasponer();
+    cout << "multiplicando X_t * X" << endl;
     Matriz M = X_t * X;
-    pair<vector<double>, vector<vector<double> > >   pair = M.calcularAutovectores(alfa);
+    cout << "calculando autovectores..." << endl;
+    pair<vector<double>, vector<vector<double> > > pair = M.calcularAutovectores(alfa);
     this -> autovalores = pair.first;
     this -> autovectores = pair.second;
     this -> alfa = alfa;
@@ -71,6 +77,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
     this -> vecinos = vecinos;
     //aplico transformacion caracteristica a cada una de las imagenes de base
     for (int j=0; j<imagenes.filas(); j++){
+        cout << "transformando imagen " <<  j << endl;
         imagenesTransformadas.push_back(tc(imagenes[j]));
     }
 }

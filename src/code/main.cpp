@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <math.h>
+#include <iomanip>
 
 Parametros leerParametros(ifstream &archivoEntrada, string infile){
 	Parametros params;
@@ -45,7 +46,7 @@ vector<double> leerArchivoImagen(string archivoImagen, Parametros params){
 }
 
 Matriz cargarImagenesTrain(ifstream &archivoEntrada, Parametros params, vector<int>* labels){
-	Matriz imagenesTrain;
+	Matriz imagenesTrain = Matriz(0,0);
 	string directorioPersona;
 	string numeroImagen;
 	for (int i = 0; i < params.p; ++i)
@@ -93,13 +94,25 @@ vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<int> labels, 
 	return resultados;
 }
 
+void escribirSalida(vector<double>& salida, ofstream& archivoSalida) {
+	for (int i=0; i<salida.size(); i++) {
+		archivoSalida << setprecision(6) << fixed << sqrt(salida[i]) << endl;
+	}
+}
+
 int main(int argc, char const *argv[])
 {
 	int vecinos = 1;
-	int alpha = 1;
 	string infile = argv[1];
+	string outfile = argv[2];
 	ifstream archivoEntrada;
+	ofstream archivoSalida;
 	archivoEntrada.open(infile.c_str());
+  	archivoSalida.open(outfile.c_str());
+
+	clock_t inicio, final;
+	inicio = clock();
+
 	if(archivoEntrada.fail()){
 		cout << "Falla Archivo de entrada" << endl;
 		exit(0);
@@ -111,22 +124,38 @@ int main(int argc, char const *argv[])
 	
 	Matriz A = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
+	cout << "filas " << A.filas() << endl;
+	cout << "columnas " << A.columnas() << endl;
+
+
+	//cout << A << endl;
+
 /*	cout << "inicio A" << endl;
 	cout << A << endl;
 	cout << "final A" << endl;*/
 
-	//PCA pca_ = PCA(A, (*labelsTrain), vecinos, alpha);
+	PCA pca_ = PCA(A, (*labelsTrain), vecinos, params.k);
 	vector<int>* labelsTest = new vector<int>();
 
 	Matriz T = cargarImagenesTest(archivoEntrada, params, labelsTest);
 
 	//vector<pair<int, int> > clasificadas = clasificarImagenes(T, (*labelsTest), pca_);
 
-	//salida = pca_.getAutovalores();
+	vector<double> salida = pca_.getAutovalores();
+
+	/*for (int i=0; i<salida.size(); i++) {
+		salida[i] = sqrt(salida[i]);
+	}*/
 	
+	escribirSalida(salida, archivoSalida);
+
+	final = clock();
+	double total = (double(final - inicio) / CLOCKS_PER_SEC);
+
+	cout << "Total: " << total << endl;
+
 	delete labelsTrain;
 	delete labelsTest;
 
-	cout << "salida" << endl;
 	return 0;
 }
