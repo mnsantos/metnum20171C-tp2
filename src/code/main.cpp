@@ -94,14 +94,51 @@ vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<int> labels, 
 	return resultados;
 }
 
+
+
 void escribirSalida(vector<double>& salida, ofstream& archivoSalida) {
 	for (int i=0; i<salida.size(); i++) {
 		archivoSalida << setprecision(6) << fixed << sqrt(salida[i]) << endl;
 	}
 }
 
-int main(int argc, char const *argv[])
-{
+// PARA CORRER TESTS DE LA CATEDRA
+int main(int argc, char const *argv[]) {
+	string infile = argv[1];
+	string outfile = argv[2];
+	ifstream archivoEntrada;
+	ofstream archivoSalida;
+	archivoEntrada.open(infile.c_str());
+  	archivoSalida.open(outfile.c_str());
+
+	if(archivoEntrada.fail()){
+		cout << "Falla Archivo de entrada" << endl;
+		exit(0);
+	}
+
+	Parametros params = leerParametros(archivoEntrada, infile);
+
+	vector<int>* labelsTrain = new vector<int>();
+	
+	Matriz A = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
+
+	PCA pca_ = PCA(A, (*labelsTrain), vecinos, params.k);
+	vector<int>* labelsTest = new vector<int>();
+
+	Matriz T = cargarImagenesTest(archivoEntrada, params, labelsTest);
+
+	vector<double> salida = pca_.getAutovalores();
+	
+	escribirSalida(salida, archivoSalida);
+
+	delete labelsTrain;
+	delete labelsTest;
+
+	return 0;
+}
+
+// PARA EXPERIMENTACION
+int main(int argc, char const *argv[]) {
 	int vecinos = 1;
 	string infile = argv[1];
 	string outfile = argv[2];
@@ -126,6 +163,7 @@ int main(int argc, char const *argv[])
 
 	cout << "filas " << A.filas() << endl;
 	cout << "columnas " << A.columnas() << endl;
+
 
 
 	//cout << A << endl;
