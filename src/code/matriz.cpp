@@ -10,11 +10,9 @@ Matriz::Matriz(){
 }
 
 Matriz::Matriz(vector<double> &v) {
-  cantFilas = v.size();
-  cantColumnas = 1;
-  for (int i=0; i<cantFilas; i++){
-    data.push_back(vector<double>(1,v[i]));
-  }
+  cantFilas = 1;
+  cantColumnas = v.size();
+  data.push_back(v);
 }
 
 Matriz::Matriz(int filas, int columnas) {
@@ -105,19 +103,34 @@ Matriz Matriz:: operator *(Matriz& m2) {
   return C;
 }
 
-Matriz Matriz:: operator *(vector<double>& v) {
-  if (this -> columnas() != v.size()){
-    throw runtime_error("No se puede multiplicar esta matriz por el vector recibido como parametro");
+double producto(vector<double> &u, vector<double> &v) {
+  double sum = 0;
+  for (unsigned int i = 0; i < u.size(); i++) {
+    sum += u[i] * v[i];
   }
+  return sum;
+}
 
-  Matriz C = Matriz(this -> filas(), 1);
-  for(int i=0;i<this->filas();i++){
-    C[i][0]=0;
-    for(int k=0;k<this->columnas();k++){
-      C[i][0]=C[i][0]+(data[i][k] * v[k]);
+Matriz Matriz::productoOptimizado(Matriz& m2) {
+  unsigned int m = cantFilas;
+  unsigned int n = cantColumnas;
+  unsigned int o = m2.filas();
+  unsigned int p = m2.columnas();
+  Matriz C = Matriz(m, o);
+  for(unsigned int i=0; i < m ; i++){
+    for(unsigned int j=0; j < o ; j++){
+      C[i][j] = producto(data[i],m2[j]);
     }
   }
   return C;
+}
+
+vector<double> Matriz:: operator *(vector<double>& v) {
+  vector<double> res = vector<double>(v.size(),0);
+  for(int i=0;i<this->filas();i++){
+    res[i]=producto(data[i], v);
+  }
+  return res;
 }
 
 Matriz Matriz:: operator *(double n) {
@@ -175,51 +188,53 @@ Matriz Matriz::cholesky() {
   return L;
 }
 
-double norma2( Matriz& v) {
+double norma2(vector<double>& v) {
   double sum = 0.0;
-  for (int i=0; i<v.filas(); i++) {
-    sum = sum + pow(v[i][0],2);
+  for (int i=0; i<v.size(); i++) {
+    sum = sum + pow(v[i],2);
   }
   return sqrt(sum);
 }
 
-double norma1(Matriz& v) {
+double norma1(vector<double>& v) {
   double sum = 0.0;
-  for (int i=0; i<v.filas(); i++) {
-    sum = sum + abs(v[i][0]);
+  for (int i=0; i<v.size(); i++) {
+    sum = sum + abs(v[i]);
   }
   return sum;
 }
 
-double normaInf(Matriz& v) {
+double normaInf(vector<double>& v) {
   double max = 0.0;
-  for (int i=0; i<v.filas(); i++) {
-    if (max < abs(v[i][0])) {
-      max = v[i][0];
+  for (int i=0; i<v.size(); i++) {
+    if (max < abs(v[i])) {
+      max = v[i];
     }
   }
   return max;
 }
 
 
-pair<double, Matriz> Matriz::metodoPotencia() {
+pair<double, vector<double> > Matriz::metodoPotencia() {
   //MetodoPotencia(B,x 0 ,niter)
   //cout << (*this) << endl;
   //v ← x0
-  Matriz v = randomVector(cantColumnas);
+  vector<double> v = randomVector(cantColumnas);
   //Para i = 1, . . . , niter
   for (int i = 0; i < niter; i++) {
     v = this->operator*(v);
     //cout << v << endl;
     //norma 2
     double norma = norma2(v);
-    for (int j=0; j<v.filas(); j++) {
-      v[j][0] = v[j][0] / norma;
+    for (int j=0; j<v.size(); j++) {
+      v[j] = v[j] / norma;
     }
   }
 
-  Matriz v_t = v.trasponer();
-  double lambda = (v_t * (*this) * v)[0][0] / (v_t * v)[0][0];
+  //Matriz v_t = Matriz(v);
+  //Matriz v1 = v_t.trasponer();
+  vector<double> Axv = (*this) * v;
+  double lambda = producto(v,Axv) / producto(v,v);
 
   //Devolver λ, v .
   return make_pair(lambda, v);
@@ -231,34 +246,49 @@ pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int 
   Matriz A = (*this);
   for (int i = 0; i < alfa; ++i) {
     cout << "calculando autovector " << i << endl;
-    pair<double, Matriz> tuple = A.metodoPotencia();
+    pair<double, vector<double> > tuple = A.metodoPotencia();
     autovalores.push_back(tuple.first);
     //cout << tuple.first << endl;
-    autovectores.push_back(tuple.second.trasponer()[0]);
+    autovectores.push_back(tuple.second);
     A = A.deflacion(tuple.first, tuple.second);
     //cout << A << endl;
   }
   return make_pair(autovalores, autovectores);
 }
 
-Matriz Matriz::deflacion(double autovalor, Matriz& autovector)  {
+Matriz Matriz::productoVec(vector<double>& v) {
+  int n = v.size();
+  Matriz res = Matriz(n,n);
+  for (int i=0; i<n; i++) {
+    vector<double> v1 = vector<double>(n,0);
+    for (int j=0; j<n; j++){
+      v1[j] = v[i] * v[j];
+    }
+    res[i] = v1; 
+  }
+  return res;
+}
+
+Matriz Matriz::deflacion(double autovalor, vector<double>& autovector)  {
   //cout << autovector << endl;
   //cout << autovalor << endl;
-  Matriz autovector_t = autovector.trasponer();
-  //cout << autovector_t << endl;
-  Matriz B = autovector * autovector_t;
+  /*
+  Matriz autovector_t = Matriz(autovector);
+  Matriz autovectorM = autovector_t.trasponer();
+  Matriz B = autovectorM * autovector_t;*/
   //cout<< B << endl;
+  Matriz B = productoVec(autovector);
   Matriz BxAutovalor = B * autovalor;
   //cout << BxAutovalor << endl;
   return ((*this) - BxAutovalor);
 }
 
 
-Matriz Matriz::randomVector(unsigned int n) {
-  Matriz v = Matriz(n, 1);
+vector<double> Matriz::randomVector(unsigned int n) {
+  vector<double> v = vector<double>(n, 0);
   srand(clock());
   for (unsigned int i = 0; i < n; i++) {
-    v[i][0] = (rand() % 100) / 100.0;
+    v[i] = (rand() % 100) / 100.0;
   }
   return v;
 }

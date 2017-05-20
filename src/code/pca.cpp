@@ -13,6 +13,7 @@ vector<double> restarVectores(vector<double>& a, vector<double>& b) {
     return res;
 }
 
+
 double productoInterno(vector<double>& u, vector<double>& v) {
     double sum = 0.0;
     for (unsigned int i = 0; i < u.size(); i++) {
@@ -21,7 +22,7 @@ double productoInterno(vector<double>& u, vector<double>& v) {
     return sum;
 }
 
-double norma2(vector<double>& a) {
+double norma_2(vector<double>& a) {
     double sum = 0.0;
     for (int i=0; i<a.size(); i++) {
         sum = sum + pow(a[i],2);
@@ -67,7 +68,10 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
     cout << "trasponiendo X" << endl;
     Matriz X_t = X.trasponer();
     cout << "multiplicando X_t * X" << endl;
-    Matriz M = X_t * X;
+    //Matriz M = X_t * X;
+    Matriz M = X_t.productoOptimizado(X_t);
+    cout << "filas: " << M.filas() << endl;
+    cout << "columnas: " << M.columnas() << endl;
     cout << "calculando autovectores..." << endl;
     pair<vector<double>, vector<vector<double> > > pair = M.calcularAutovectores(alfa);
     this -> autovalores = pair.first;
@@ -77,7 +81,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
     this -> vecinos = vecinos;
     //aplico transformacion caracteristica a cada una de las imagenes de base
     for (int j=0; j<imagenes.filas(); j++){
-        cout << "transformando imagen " <<  j << endl;
+        //cout << "transformando imagen " <<  j << endl;
         imagenesTransformadas.push_back(tc(imagenes[j]));
     }
 }
@@ -154,5 +158,5 @@ int PCA::metodo2(vector<double>& xprima, int vecinos) {
 
 double PCA::distancia(vector<double>& xprima, vector<double>& imagenTransformada) {
     vector<double> resta = restarVectores(xprima, imagenTransformada);
-    return norma2(resta);
+    return norma_2(resta);
 }
