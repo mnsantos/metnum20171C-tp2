@@ -55,7 +55,7 @@ def callTestingFile(alpha, folds_k, n):
 		numTest = 1
 		for fold in folds:
 			archivoEntrada = 'tests/test_'+str(alpha)+'_'+str(folds_k)+'_'+str(n)+'_'+str(numTest)+'.in'
-			archivoSalida = 'tests/test_'+str(alpha)+'_'+str(folds_k)+'_'+str(n)+'_'+str(numTest)+'.out'
+			archivoSalida = 'results/test_'+str(alpha)+'_'+str(folds_k)+'_'+str(n)+'_'+str(numTest)+'.out'
 			args = ['./tp', archivoEntrada, archivoSalida]
 			print 'ejecutando: ', archivoEntrada 
 			process = subprocess.call(args)
