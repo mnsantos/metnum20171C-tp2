@@ -6,6 +6,10 @@
 
 using namespace std;
 
+extern Config CONFIG;
+extern vector< vector<double> > TIEMPOS_AUTOVECTORES;
+extern double CORRIDA_ACTUAL;
+
 Matriz::Matriz(){
 }
 
@@ -244,12 +248,26 @@ pair<vector<double>, vector<vector<double> > > Matriz::calcularAutovectores(int 
   vector<double> autovalores;
   vector< vector<double> > autovectores;
   Matriz A = (*this);
+  clock_t inicio, final;
   for (int i = 0; i < alfa; ++i) {
+    if ((CONFIG.testEnabled && (i % CONFIG.saltoAlfa == 0)) || i==0) {
+      //cout << "inicio clock" << endl; 
+      inicio = clock();
+    }
     cout << "calculando autovector " << i << endl;
     pair<double, vector<double> > tuple = A.metodoPotencia();
     autovalores.push_back(tuple.first);
     //cout << tuple.first << endl;
     autovectores.push_back(tuple.second);
+    if (CONFIG.testEnabled && ((i % CONFIG.saltoAlfa) == (CONFIG.saltoAlfa - 1))){
+      //cout << "fin clock" << endl; 
+      final = clock();
+      double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
+      //cout << "Total: " << total;
+      //cout << "corrida acutal : " << CORRIDA_ACTUAL << endl;
+      //cout << "size: " << TIEMPOS_AUTOVECTORES.size() << endl;
+      TIEMPOS_AUTOVECTORES[CORRIDA_ACTUAL].push_back(total);
+    }
     A = A.deflacion(tuple.first, tuple.second);
     //cout << A << endl;
   }

@@ -2,6 +2,7 @@
 #define MATRIZ_H
 #include <vector>
 #include <iostream>
+#include "config.h"
 
 using namespace std;
 

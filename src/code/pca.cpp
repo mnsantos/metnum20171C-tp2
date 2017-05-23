@@ -5,6 +5,12 @@
 
 using namespace std;
 
+extern Config CONFIG;
+extern double CORRIDA_ACTUAL;
+extern vector< vector<double> > TIEMPOS_TRANSFORMACIONES;
+extern vector< vector<double> > TIEMPOS_CLASIFICAR;
+extern double TIEMPO_ARMADO;
+
 vector<double> restarVectores(vector<double>& a, vector<double>& b) {
     vector<double> res;
     for (int i=0; i<a.size(); i++) {
@@ -31,7 +37,6 @@ double norma_2(vector<double>& a) {
 }
 
 vector<double> PCA::calcularMedia(Matriz& M) {
-    cout << "calcular media" << endl;
     vector<double> medias;
     for(int i=0; i<M.columnas(); i++){
         double media = 0;
@@ -44,10 +49,9 @@ vector<double> PCA::calcularMedia(Matriz& M) {
 }
 
 Matriz PCA::calcularX(Matriz& imagenes, vector<double>& media) {
-    cout << "calcular X" << endl;
     int n = imagenes.filas();
     int m = imagenes.columnas();
-    cout << "n " << n << " m " << m << endl;
+    //cout << "n " << n << " m " << m << endl;
     Matriz X = Matriz(n, m);
     for(int i=0; i<n; i++){
         X[i] = restarVectores(imagenes[i], media);
@@ -62,61 +66,79 @@ vector<double> PCA::getAutovalores() {
     return autovalores;
 }
 
-PCA::PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa) {
+PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
+    clock_t inicio, final;
+    inicio = clock();
+    cout << "calculando media" << endl;
     vector<double> media = calcularMedia(imagenes);
+    cout << "calculando X" << endl;
     Matriz X = calcularX(imagenes, media);
     cout << "trasponiendo X" << endl;
     Matriz X_t = X.trasponer();
     cout << "multiplicando X_t * X" << endl;
     //Matriz M = X_t * X;
     Matriz M = X_t.productoOptimizado(X_t);
-    cout << "filas: " << M.filas() << endl;
-    cout << "columnas: " << M.columnas() << endl;
+    //cout << "filas: " << M.filas() << endl;
+    //cout << "columnas: " << M.columnas() << endl;
     cout << "calculando autovectores..." << endl;
-    pair<vector<double>, vector<vector<double> > > pair = M.calcularAutovectores(alfa);
+    pair<vector<double>, vector<vector<double> > > pair;
+    final = clock();
+    double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
+    TIEMPO_ARMADO = total;
+    for (int i=0; i<CONFIG.corridas; i++) {
+        pair = M.calcularAutovectores(alfa);
+        CORRIDA_ACTUAL ++;
+    }
+    CORRIDA_ACTUAL = 0;
     this -> autovalores = pair.first;
     this -> autovectores = pair.second;
     this -> alfa = alfa;
     this -> labels = labels;
-    this -> vecinos = vecinos;
-    //aplico transformacion caracteristica a cada una de las imagenes de base
-    for (int j=0; j<imagenes.filas(); j++){
-        //cout << "transformando imagen " <<  j << endl;
-        imagenesTransformadas.push_back(tc(imagenes[j]));
-    }
+    if (CONFIG.testEnabled) {
+        int alfas = alfa / CONFIG.saltoAlfa;
+        for (int i=0; i<CONFIG.corridas; i++) {
+            for (int h=1; h<=alfas; h++) {
+                int alfa_actual = h*CONFIG.saltoAlfa;
+                //cout << "Transformando base de train para alfa=" << alfa_actual << endl;
+                inicio = clock();
+                for (int j=0; j<imagenes.filas(); j++){
+                    //cout << "transformando imagen " <<  j << endl;
+                    //aplico transformacion caracteristica a cada una de las imagenes de base
+                    //cout << "Aplicando tc para alfa=" << alfa_actual << endl; 
+                    imagenesTransformadas[alfa_actual].push_back(tc(imagenes[j], alfa_actual));
+                } 
+                final = clock();
+                double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
+                //cout << "Total para alfa=" << alfa_actual << ": " << total << endl;
+                TIEMPOS_TRANSFORMACIONES[CORRIDA_ACTUAL].push_back(total);
+            }
+            CORRIDA_ACTUAL ++;
+        }
+    } else {
+        for (int j=0; j<imagenes.filas(); j++){
+            //aplico transformacion caracteristica a cada una de las imagenes de base
+            imagenesTransformadas[alfa].push_back(tc(imagenes[j], alfa));
+        }         
+    }  
 }
 
-vector<double> PCA::tc(vector<double>& imagen) {
-    int n = autovectores.size();
+vector<double> PCA::tc(vector<double>& imagen, int alfa) {
     vector<double> Y;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < alfa; ++i) {
         Y.push_back(productoInterno(autovectores[i], imagen));
     }
     return Y;
 }
 
-int PCA::clasificar(vector<double> &imagen, int metodo){
-    vector<double> xprima = tc(imagen);
-    int res;
-    switch (metodo) {  
-        case 1:  
-            res = metodo1(xprima);  
-            break;  
-        case 2:  
-            res = metodo2(xprima, vecinos);  
-            break;
-    } 
-    return res;
-}
-
 // Me quedo con el mas cercano de todos...
-int PCA::metodo1(vector<double>& xprima) {
+int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) {
+    vector<double> xprima = tc(imagen, alfa);
     vector<double> distancias;
-    for (int i=0; i<imagenesTransformadas.size(); i++) {
-        distancias.push_back(distancia(xprima, imagenesTransformadas[i]));
+    for (int i=0; i<imagenesTransformadas[alfa].size(); i++) {
+        distancias.push_back(distancia(xprima, imagenesTransformadas[alfa][i]));
     }
     double min_distancia = 99999999;
-    double indice;
+    int indice;
     for (int i=0; i<distancias.size(); i++) {
         if (distancias[i] < min_distancia) {
             min_distancia = distancias[i];
@@ -127,11 +149,11 @@ int PCA::metodo1(vector<double>& xprima) {
 }
 
 // kNN
-int PCA::metodo2(vector<double>& xprima, int vecinos) {
-    //TODO: implementar metodo2
+int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) {
     vector<pair<double, int> > pairs;
-    for (int i=0; i<imagenesTransformadas.size(); i++) {
-        pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[i]), labels[i]));
+    vector<double> xprima = tc(imagen, alfa);
+    for (int i=0; i<imagenesTransformadas[alfa].size(); i++) {
+        pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
     }
     sort(pairs.begin(), pairs.end());
     map<int, int> reps;

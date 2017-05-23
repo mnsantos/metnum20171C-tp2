@@ -7,6 +7,32 @@
 #include <sstream>
 #include <math.h>
 #include <iomanip>
+#include <map>
+
+using namespace std;
+
+struct Key {
+	int alfa;
+	int metodo;
+	int vecinos;
+
+	Key(int a, int m, int v) {
+		alfa = a;
+		metodo = m;
+		vecinos = v;
+	}
+};
+
+bool operator<(const Key& l, const Key& r) {
+     return l.alfa<r.alfa;
+}
+
+double CORRIDA_ACTUAL = 0;
+Config CONFIG;
+double TIEMPO_ARMADO;
+vector< vector<double> > TIEMPOS_AUTOVECTORES;
+vector< vector<double> > TIEMPOS_TRANSFORMACIONES;
+map<Key,vector<double> > TIEMPOS_CLASIFICACIONES;
 
 Parametros leerParametros(ifstream &archivoEntrada, string infile){
 	Parametros params;
@@ -31,12 +57,12 @@ vector<double> leerArchivoImagen(string archivoImagen, Parametros params){
 		cout << "Falla Archivo de imagen: " << archivoImagen << endl;
 		exit(0);
 	} else {
-		for (std::string line; std::getline(archivoEntrada, line); ){
+		for (string line; getline(archivoEntrada, line); ){
 			// process "line"
-			std::stringstream ss(line);
-			std::string token;
+			stringstream ss(line);
+			string token;
 
-			while(std::getline(ss, token, ',')) {
+			while(getline(ss, token, ',')) {
 				vectorImagen.push_back(atoi(token.c_str()));
 			}
 		}
@@ -66,7 +92,7 @@ Matriz cargarImagenesTrain(ifstream &archivoEntrada, Parametros params, vector<i
 }
 
 Matriz cargarImagenesTest(ifstream &archivoEntrada, Parametros params, vector<int>* labels){
-	Matriz imagenesTest;
+	Matriz imagenesTest = Matriz(0,0);
 	string imagenTest;
 	int sujeto;
 	archivoEntrada >> params.ntest;
@@ -81,19 +107,26 @@ Matriz cargarImagenesTest(ifstream &archivoEntrada, Parametros params, vector<in
 	return imagenesTest;
 }
 
-vector<pair<int, int> > clasificarImagenes(Matriz imagenes, vector<int> labels, PCA pca){
-	vector<pair<int, int> > resultados;
-	for (int i = 0; i < imagenes.filas(); ++i)
-	{
-		int asignado = pca.clasificar(imagenes[i], 1);
-		int label = labels[i];
-		pair<int, int> res = make_pair(label, asignado);
-		resultados.push_back(res);
-		
+void leerConfig() {
+	ifstream archivoEntrada;
+	archivoEntrada.open("config/config.txt");
+	if(archivoEntrada.fail()){
+		cout << "No se pudo cargar la configuracion" << endl;
+		exit(0);
 	}
-	return resultados;
-}
+	archivoEntrada >> CONFIG.testEnabled;
+	archivoEntrada >> CONFIG.corridas;
+	archivoEntrada >> CONFIG.saltoAlfa;
+	archivoEntrada >> CONFIG.vecinos;
+	archivoEntrada >> CONFIG.saltoVecinos;
+	//incializando vectores
+	vector<double> initVal1;
+	vector<double> initVal2;
+	TIEMPOS_AUTOVECTORES.resize(CONFIG.corridas, initVal1);
+	TIEMPOS_TRANSFORMACIONES.resize(CONFIG.corridas, initVal2);
 
+	//cout << "size: " << TIEMPOS_AUTOVECTORES[0].size() << endl;
+}
 
 
 void escribirSalida(vector<double>& salida, ofstream& archivoSalida) {
@@ -102,8 +135,100 @@ void escribirSalida(vector<double>& salida, ofstream& archivoSalida) {
 	}
 }
 
+map<Key,vector<pair<int, int> > > clasificarImagenes(Matriz& imagenes, vector<int>& labels, PCA & pca, int alfa){
+	map<Key,vector<pair<int, int> > > resultados;
+	clock_t inicio, final;
+	int alfas = alfa / CONFIG.saltoAlfa;
+	for (int j=0; j<imagenes.filas(); j++){
+		for (int h=1; h<=alfas; h++){
+			for (int metodo=1; metodo<=2; metodo++) {
+				for (int vecinos=1; vecinos<=CONFIG.vecinos; vecinos+=CONFIG.saltoVecinos) {
+					for (int corrida_actual=0; corrida_actual<CONFIG.corridas; corrida_actual++) {
+						inicio = clock();
+						int alfa_actual = h*CONFIG.saltoAlfa;
+						Key key = Key(alfa_actual, metodo, vecinos);
+						//cout << "Clasificando alfa=" << alfa_actual << ", metodo=" << metodo << ", vecinos=" << vecinos << endl;
+						int asignado;
+						if (metodo==1) {
+							asignado = pca.clasificarUsandoMetodo1(imagenes[j], alfa_actual, vecinos);
+						} else if (metodo==2) {
+							asignado = pca.clasificarUsandoMetodo2(imagenes[j], alfa_actual, vecinos);
+						}
+						final = clock();
+						double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
+						int label = labels[j];
+						//cout << "Asignado: " << asignado << ". Real: " << label << endl; 
+						pair<int, int> res = make_pair(label, asignado);
+						resultados[key].push_back(res);	
+						if (j==imagenes.filas()-1) {
+							TIEMPOS_CLASIFICACIONES[key].push_back(total);
+						}
+					}	
+				}			
+			}
+		}
+	}
+	return resultados;
+}
+
+void escribirResultados(map<Key,vector<pair<int, int> > >& resultados, ofstream& archivoSalida, int cantImagenesTest, int alfa) {
+	int alfas = alfa / CONFIG.saltoAlfa;
+	archivoSalida << alfas << " " << CONFIG.vecinos << " " << cantImagenesTest << endl;
+
+	//calculando tiempos
+	vector<double> tiempoAutovectores;
+	vector<double> tiempoTransformaciones;		
+	for (int j=0; j<alfas; j++) {
+		double sumAutovectores = 0;
+		double sumTransformaciones = 0;
+		for (int corrida_actual=0; corrida_actual<CONFIG.corridas; corrida_actual++) {
+			sumAutovectores += TIEMPOS_AUTOVECTORES[corrida_actual][j];
+			sumTransformaciones += TIEMPOS_TRANSFORMACIONES[corrida_actual][j];
+		}
+		tiempoAutovectores.push_back(sumAutovectores / CONFIG.corridas);
+		tiempoTransformaciones.push_back(sumTransformaciones / CONFIG.corridas);
+	}
+	double tiempoAutovectoresAcum = 0;
+
+	for (int h=0; h<alfas; h++) {
+		int alfa_actual = (h+1)*CONFIG.saltoAlfa;
+		archivoSalida << alfa_actual << endl;
+
+		/*cout << "Tiempos autovectores:" << endl;
+      	for (int j=0; j<TIEMPOS_AUTOVECTORES[0].size(); j++) {
+        	cout << TIEMPOS_AUTOVECTORES[0][j] <<  " ";
+      	}*/
+
+		double tiempoAutovectoresAlfa = tiempoAutovectores[h] + tiempoAutovectoresAcum;
+		tiempoAutovectoresAcum += tiempoAutovectoresAlfa;
+		archivoSalida << fixed << TIEMPO_ARMADO + tiempoAutovectoresAlfa << " " << tiempoTransformaciones[h] << endl;
+		for (int vecinos=1; vecinos<CONFIG.vecinos; vecinos+=CONFIG.saltoVecinos) {
+			archivoSalida << vecinos << endl;
+			Key key = Key(alfa_actual, 1, vecinos);
+			double tiempoClasificaciones = 0;
+			for (int corrida_actual=0; corrida_actual<CONFIG.corridas; corrida_actual++) {
+				tiempoClasificaciones += TIEMPOS_CLASIFICACIONES[key][corrida_actual];
+			}
+			archivoSalida << tiempoClasificaciones / CONFIG.corridas << endl;
+			for (int i=0; i<cantImagenesTest; i++) {
+				archivoSalida << resultados[key][i].first << " " << resultados[key][i].second << endl;
+			}
+			key = Key(alfa_actual, 2, vecinos);
+			tiempoClasificaciones = 0;
+			for (int corrida_actual=0; corrida_actual<CONFIG.corridas; corrida_actual++) {
+				tiempoClasificaciones += TIEMPOS_CLASIFICACIONES[key][corrida_actual];
+			}
+			archivoSalida << tiempoClasificaciones / CONFIG.corridas << endl;
+			for (int i=0; i<cantImagenesTest; i++) {
+				archivoSalida << resultados[key][i].first << " " << resultados[key][i].second << endl;
+			}
+		}
+	}
+}
+
 // PARA CORRER TESTS DE LA CATEDRA
-int main(int argc, char const *argv[]) {
+void modo_normal(int argc, char const *argv[]) {
+	cout << "corriendo en modo normal" << endl;
 	string infile = argv[1];
 	string outfile = argv[2];
 	ifstream archivoEntrada;
@@ -120,12 +245,10 @@ int main(int argc, char const *argv[]) {
 
 	vector<int>* labelsTrain = new vector<int>();
 	
-	Matriz A = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
+	Matriz imagenesTrain = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
-	PCA pca_ = PCA(A, (*labelsTrain), vecinos, params.k);
+	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k);
 	vector<int>* labelsTest = new vector<int>();
-
-	Matriz T = cargarImagenesTest(archivoEntrada, params, labelsTest);
 
 	vector<double> salida = pca_.getAutovalores();
 	
@@ -134,21 +257,17 @@ int main(int argc, char const *argv[]) {
 	delete labelsTrain;
 	delete labelsTest;
 
-	return 0;
 }
 
 // PARA EXPERIMENTACION
-int main(int argc, char const *argv[]) {
-	int vecinos = 1;
+void modo_experimentacion(int argc, char const *argv[]) {
+	cout << "corriendo en modo experimentacion" << endl;
 	string infile = argv[1];
 	string outfile = argv[2];
 	ifstream archivoEntrada;
 	ofstream archivoSalida;
 	archivoEntrada.open(infile.c_str());
   	archivoSalida.open(outfile.c_str());
-
-	clock_t inicio, final;
-	inicio = clock();
 
 	if(archivoEntrada.fail()){
 		cout << "Falla Archivo de entrada" << endl;
@@ -159,41 +278,29 @@ int main(int argc, char const *argv[]) {
 
 	vector<int>* labelsTrain = new vector<int>();
 	
-	Matriz A = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
+	Matriz imagenesTrain = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
-	cout << "filas " << A.filas() << endl;
-	cout << "columnas " << A.columnas() << endl;
-
-
-
-	//cout << A << endl;
-
-/*	cout << "inicio A" << endl;
-	cout << A << endl;
-	cout << "final A" << endl;*/
-
-	PCA pca_ = PCA(A, (*labelsTrain), vecinos, params.k);
+	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k);
 	vector<int>* labelsTest = new vector<int>();
 
-	Matriz T = cargarImagenesTest(archivoEntrada, params, labelsTest);
+	Matriz imagenesTest = cargarImagenesTest(archivoEntrada, params, labelsTest);
+	map<Key,vector<pair<int, int> > > resultados = clasificarImagenes(imagenesTest, (*labelsTest), pca_, params.k);
 
-	//vector<pair<int, int> > clasificadas = clasificarImagenes(T, (*labelsTest), pca_);
+	cout << "escribiendo resultados..." << endl;
 
-	vector<double> salida = pca_.getAutovalores();
-
-	/*for (int i=0; i<salida.size(); i++) {
-		salida[i] = sqrt(salida[i]);
-	}*/
-	
-	escribirSalida(salida, archivoSalida);
-
-	final = clock();
-	double total = (double(final - inicio) / CLOCKS_PER_SEC);
-
-	cout << "Total: " << total << endl;
+	escribirResultados(resultados, archivoSalida, imagenesTest.filas(), params.k);
 
 	delete labelsTrain;
 	delete labelsTest;
+}
 
+
+int main(int argc, char const *argv[]) {
+	leerConfig();
+	if (CONFIG.testEnabled) {
+		modo_experimentacion(argc, argv);
+	} else {
+		modo_normal(argc, argv);
+	}
 	return 0;
 }

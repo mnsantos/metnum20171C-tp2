@@ -1,5 +1,6 @@
 #include "matriz.h"
 #include <iostream>
+#include <map>
 
 using namespace std;
 
@@ -7,24 +8,23 @@ class PCA {
 
     public:
         PCA();
-        PCA(Matriz& imagenes, vector<int>& labels, int vecinos, int alfa);
+        PCA(Matriz& imagenes, vector<int>& labels, int alfa);
         vector<double> getAutovalores();
-        int clasificar(vector<double>& imagen, int metodo);
+        int clasificarUsandoMetodo1(vector<double>& imagen, int alfa, int vecinos);
+        int clasificarUsandoMetodo2(vector<double>& imagen, int alfa, int vecinos);
 
     private:
         vector<double> autovalores;
         vector< vector<double> > autovectores;
-        vector< vector<double> > imagenesTransformadas;
+        //vector< vector<double> > imagenesTransformadas;
+        map<int, vector< vector<double> > > imagenesTransformadas;
         int alfa;
-        int vecinos;
         vector<int> labels;
 
         //metodos privados auxiliares
         Matriz calcularX(Matriz& imagenes, vector<double>& media);
         vector<double> calcularMedia(Matriz& M);
-        vector<double> tc(vector<double>& imagen);
+        vector<double> tc(vector<double>& imagen, int alfa);
 
         double distancia(vector<double>& xprima, vector<double>& imagenTransformada);
-        int metodo1(vector<double>& xprima);
-        int metodo2(vector<double>& xprima, int vecinos);
 };
