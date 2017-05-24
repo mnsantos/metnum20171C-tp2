@@ -201,7 +201,7 @@ void escribirResultados(map<Key,vector<pair<int, int> > >& resultados, ofstream&
 		double tiempoAutovectoresAlfa = tiempoAutovectores[h] + tiempoAutovectoresAcum;
 		tiempoAutovectoresAcum += tiempoAutovectoresAlfa;
 		archivoSalida << fixed << TIEMPO_ARMADO + tiempoAutovectoresAlfa << " " << tiempoTransformaciones[h] << endl;
-		for (int vecinos=1; vecinos<CONFIG.vecinos; vecinos+=CONFIG.saltoVecinos) {
+		for (int vecinos=1; vecinos<=CONFIG.vecinos; vecinos+=CONFIG.saltoVecinos) {
 			archivoSalida << vecinos << endl;
 			Key key = Key(alfa_actual, 1, vecinos);
 			double tiempoClasificaciones = 0;
