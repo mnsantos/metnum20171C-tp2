@@ -8,6 +8,7 @@ using namespace std;
 extern Config CONFIG;
 extern double CORRIDA_ACTUAL;
 extern vector< vector<double> > TIEMPOS_TRANSFORMACIONES;
+extern vector< vector<double> > TIEMPOS_AUTOVECTORES;
 extern vector< vector<double> > TIEMPOS_CLASIFICAR;
 extern double TIEMPO_ARMADO;
 
@@ -26,6 +27,14 @@ double productoInterno(vector<double>& u, vector<double>& v) {
             sum += u[i] * v[i];
     }
     return sum;
+}
+
+vector<double> productoPorEscalar(vector<double>& v, double e) {
+    vector<double> res;
+    for (int i=0; i<v.size(); i++) {
+        res.push_back(e*v[i]);
+    }
+    return res;
 }
 
 double norma_2(vector<double>& a) {
@@ -70,7 +79,7 @@ vector< vector<double> > PCA::getAutovectores() {
     return autovectores;
 }
 
-PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
+PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores) {
     clock_t inicio, final;
     inicio = clock();
     cout << "calculando media" << endl;
@@ -79,12 +88,17 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
     Matriz X = calcularX(imagenes, media);
     cout << "trasponiendo X" << endl;
     Matriz X_t = X.trasponer();
-    cout << "multiplicando X_t * X" << endl;
-    //Matriz M = X_t * X;
-    Matriz M = X_t.productoOptimizado(X_t);
-    //Matriz M = X.productoOptimizado(X);
-    //cout << "filas: " << M.filas() << endl;
-    //cout << "columnas: " << M.columnas() << endl;
+    Matriz M;
+    if (metodoAutovectores == 1) {
+        // Metodo lento
+        cout << "multiplicando X_t * X" << endl;
+        M = X_t.productoOptimizado(X_t);
+    } else {
+        // Metodo rapido
+        cout << "multiplicando X * X_t" << endl;
+        M = X.productoOptimizado(X);
+
+    }
     cout << "calculando autovectores..." << endl;
     pair<vector<double>, vector<vector<double> > > pair;
     final = clock();
@@ -94,11 +108,34 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
         pair = M.calcularAutovectores(alfa);
         CORRIDA_ACTUAL ++;
     }
+
     CORRIDA_ACTUAL = 0;
     this -> autovalores = pair.first;
     this -> autovectores = pair.second;
     this -> alfa = alfa;
     this -> labels = labels;
+    if (metodoAutovectores == 2) {
+        int h = 0;
+        for (int i = 0; i < alfa; ++i) {
+            if ((CONFIG.testEnabled && (i % CONFIG.saltoAlfa == 0)) || i==0) {
+              //cout << "inicio clock" << endl; 
+              inicio = clock();
+            }
+            //cout << "transformando autovector " << i << endl;
+            double e = sqrt(autovalores[i]) / autovalores[i];
+            vector<double> v = X_t * autovectores[i];
+            this -> autovectores[i] = productoPorEscalar(v,e);  
+            
+            if (CONFIG.testEnabled && ((i % CONFIG.saltoAlfa) == (CONFIG.saltoAlfa - 1))){
+                final = clock();
+                double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
+                TIEMPOS_AUTOVECTORES[CORRIDA_ACTUAL][h] += total;
+                h++;
+            }
+        }
+    }
+
+
     if (CONFIG.testEnabled) {
         int alfas = alfa / CONFIG.saltoAlfa;
         for (int i=0; i<CONFIG.corridas; i++) {

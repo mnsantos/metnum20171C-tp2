@@ -11,7 +11,7 @@ struct Config {
 	int saltoAlfa;
 	int vecinos;
 	int saltoVecinos;
-
+	int metodoAutovectores;
 };
 
 #endif

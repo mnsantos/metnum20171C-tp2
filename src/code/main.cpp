@@ -119,6 +119,7 @@ void leerConfig() {
 	archivoEntrada >> CONFIG.saltoAlfa;
 	archivoEntrada >> CONFIG.vecinos;
 	archivoEntrada >> CONFIG.saltoVecinos;
+	archivoEntrada >> CONFIG.metodoAutovectores;
 	//incializando vectores
 	vector<double> initVal1;
 	vector<double> initVal2;
@@ -247,20 +248,24 @@ void modo_normal(int argc, char const *argv[]) {
 	
 	Matriz imagenesTrain = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
-	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k);
+	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k, CONFIG.metodoAutovectores);
 	vector<int>* labelsTest = new vector<int>();
 
-	vector<double> salida = pca_.getAutovalores();
-	//vector<vector<double> > autovectores = pca_.getAutovectores();
+	vector<double> autovalores = pca_.getAutovalores();
+	vector<vector<double> > autovectores = pca_.getAutovectores();
 
-	/*for(int i=0; i<autovectores.size(); i++) {
+	/*for(int i=0; i<autovalores.size(); i++) {
+		cout << autovalores[i] << endl;
+	}
+
+	for(int i=0; i<autovectores.size(); i++) {
 		for(int j=0; j<autovectores[i].size(); j++) {
 			cout << autovectores[i][j] << " ";
 		}
 		cout << endl;
 	}*/
 
-	escribirSalida(salida, archivoSalida);
+	escribirSalida(autovalores, archivoSalida);
 
 	delete labelsTrain;
 	delete labelsTest;
@@ -288,7 +293,7 @@ void modo_experimentacion(int argc, char const *argv[]) {
 	
 	Matriz imagenesTrain = cargarImagenesTrain(archivoEntrada, params, labelsTrain);
 
-	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k);
+	PCA pca_ = PCA(imagenesTrain, (*labelsTrain), params.k, CONFIG.metodoAutovectores);
 	vector<int>* labelsTest = new vector<int>();
 
 	Matriz imagenesTest = cargarImagenesTest(archivoEntrada, params, labelsTest);

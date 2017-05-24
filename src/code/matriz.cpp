@@ -130,7 +130,7 @@ Matriz Matriz::productoOptimizado(Matriz& m2) {
 }
 
 vector<double> Matriz:: operator *(vector<double>& v) {
-  vector<double> res = vector<double>(v.size(),0);
+  vector<double> res = vector<double>(cantFilas,0);
   for(int i=0;i<this->filas();i++){
     res[i]=producto(data[i], v);
   }

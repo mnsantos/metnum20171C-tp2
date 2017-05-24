@@ -8,7 +8,7 @@ class PCA {
 
     public:
         PCA();
-        PCA(Matriz& imagenes, vector<int>& labels, int alfa);
+        PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores);
         vector<double> getAutovalores();
         vector< vector<double> > getAutovectores();
         int clasificarUsandoMetodo1(vector<double>& imagen, int alfa, int vecinos);
