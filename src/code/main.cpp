@@ -24,7 +24,7 @@ struct Key {
 };
 
 bool operator<(const Key& l, const Key& r) {
-     return l.alfa<r.alfa;
+	return (l.alfa < r.alfa || (l.alfa == r.alfa && l.metodo < r.metodo) || (l.alfa == r.alfa && l.metodo == r.metodo && l.vecinos < r.vecinos));
 }
 
 double CORRIDA_ACTUAL = 0;
@@ -157,7 +157,6 @@ map<Key,vector<pair<int, int> > > clasificarImagenes(Matriz& imagenes, vector<in
 						final = clock();
 						double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
 						int label = labels[j];
-						//cout << "Asignado: " << asignado << ". Real: " << label << endl; 
 						pair<int, int> res = make_pair(label, asignado);
 						resultados[key].push_back(res);	
 						if (j==imagenes.filas()-1) {
@@ -220,6 +219,7 @@ void escribirResultados(map<Key,vector<pair<int, int> > >& resultados, ofstream&
 			}
 			archivoSalida << tiempoClasificaciones / CONFIG.corridas << endl;
 			for (int i=0; i<cantImagenesTest; i++) {
+				//cout << "Asignado por metodo 2 " << resultados[key][i].second << endl;
 				archivoSalida << resultados[key][i].first << " " << resultados[key][i].second << endl;
 			}
 		}
@@ -251,7 +251,15 @@ void modo_normal(int argc, char const *argv[]) {
 	vector<int>* labelsTest = new vector<int>();
 
 	vector<double> salida = pca_.getAutovalores();
-	
+	//vector<vector<double> > autovectores = pca_.getAutovectores();
+
+	/*for(int i=0; i<autovectores.size(); i++) {
+		for(int j=0; j<autovectores[i].size(); j++) {
+			cout << autovectores[i][j] << " ";
+		}
+		cout << endl;
+	}*/
+
 	escribirSalida(salida, archivoSalida);
 
 	delete labelsTrain;

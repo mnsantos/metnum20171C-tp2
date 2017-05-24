@@ -66,6 +66,10 @@ vector<double> PCA::getAutovalores() {
     return autovalores;
 }
 
+vector< vector<double> > PCA::getAutovectores() {
+    return autovectores;
+}
+
 PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
     clock_t inicio, final;
     inicio = clock();
@@ -78,6 +82,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa) {
     cout << "multiplicando X_t * X" << endl;
     //Matriz M = X_t * X;
     Matriz M = X_t.productoOptimizado(X_t);
+    //Matriz M = X.productoOptimizado(X);
     //cout << "filas: " << M.filas() << endl;
     //cout << "columnas: " << M.columnas() << endl;
     cout << "calculando autovectores..." << endl;
@@ -130,26 +135,8 @@ vector<double> PCA::tc(vector<double>& imagen, int alfa) {
     return Y;
 }
 
-// Me quedo con el mas cercano de todos...
-int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) {
-    vector<double> xprima = tc(imagen, alfa);
-    vector<double> distancias;
-    for (int i=0; i<imagenesTransformadas[alfa].size(); i++) {
-        distancias.push_back(distancia(xprima, imagenesTransformadas[alfa][i]));
-    }
-    double min_distancia = 99999999;
-    int indice;
-    for (int i=0; i<distancias.size(); i++) {
-        if (distancias[i] < min_distancia) {
-            min_distancia = distancias[i];
-            indice = i;
-        }
-    }
-    return labels[indice];
-}
-
 // kNN
-int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) {
+int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) {
     vector<pair<double, int> > pairs;
     vector<double> xprima = tc(imagen, alfa);
     for (int i=0; i<imagenesTransformadas[alfa].size(); i++) {
@@ -172,6 +159,36 @@ int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) 
     for (it=reps.begin(); it!=reps.end(); ++it) {
         if (it -> second > max_reps) {
             max_reps = it -> second;
+            max_label = it -> first;
+        }
+    }
+    return max_label;
+}
+
+// kNN ponderado
+int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) {
+    vector<pair<double, int> > pairs;
+    vector<double> xprima = tc(imagen, alfa);
+    for (int i=0; i<imagenesTransformadas[alfa].size(); i++) {
+        pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
+    }
+    sort(pairs.begin(), pairs.end());
+    map<int, double> weights;
+    map<int, double>::iterator it;
+    for (int i=0; i<vecinos; i++) {
+        int label = pairs[i].second;
+        it = weights.find(label);
+        if (it == weights.end()) {
+            weights[label] = 1 / pairs[i].first;
+        } else {
+            weights[label] += 1 / pairs[i].first; 
+        }
+    }
+    double max_weigth = 0;
+    int max_label = -1;
+    for (it=weights.begin(); it!=weights.end(); ++it) {
+        if (it -> second > max_weigth) {
+            max_weigth = it -> second;
             max_label = it -> first;
         }
     }
