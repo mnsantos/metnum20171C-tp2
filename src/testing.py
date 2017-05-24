@@ -77,8 +77,8 @@ def kfolds(k, n):
 	return trainings
 
 def main(argv):
-	alphas = [60]
-	folds = [2, 4, 6, 8]
+	alphas = [100]
+	folds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 	n = 10
 	crearArchivosTesting(alphas, folds, n)
 	ejecutarArchivosTesting(alphas, folds, n)

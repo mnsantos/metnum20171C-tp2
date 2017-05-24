@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from random import sample
 from collections import namedtuple
 
-Resultado = namedtuple("Resultado", "tiempo_autovectores tiempo_transformaciones tiempo_clasificacion precision_recall_fscore_support confMatrix")
+Resultado = namedtuple("Resultado", "alfa k_vecinos metodo folds_k tiempo_autovectores tiempo_transformaciones tiempo_clasificacion y_true y_pred")
 
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
@@ -46,95 +46,77 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
-def readFile(filename, folds_k, n, numTest):
-	labels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+def readFile(filename, folds_k):
 	resultados = []
+	labels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 	with open(filename) as f:
 		alfas = []
-		cant_alfas, cant_vecinos, cant_imagenes_test = f.readline().split()
-		print(cant_alfas, cant_vecinos, cant_imagenes_test)
-		for a in range(0, int(cant_alfas)):
-			alfa = f.readline().split()
-			print(alfa)
-			tiempo_autovectores, tiempo_transformaciones = f.readline().split()
-			print(tiempo_autovectores, tiempo_transformaciones)
+		cant_alfas, cant_vecinos, cant_imagenes_test = [int(n) for n in f.readline().split()]
+		for a in range(0, cant_alfas):
+			alfa = [int(n) for n in f.readline().split()][0]
+			tiempo_autovectores, tiempo_transformaciones = [float(n) for n in f.readline().split()]
 			vecinos = []
-			for v in range(0,int(cant_vecinos)):
-				k_vecinos = f.readline().split()
-				print(k_vecinos)
+			for v in range(0,cant_vecinos):
+				k_vecinos = [int(n) for n in f.readline().split()][0]
 				metodos = []
-				for metodo in range(0,2):
-					tiempo_clasificacion = f.readline().split()
-					print("tiempo clasificacion: " + tiempo_clasificacion[0])
+				for metodo in range(1,3):
+					tiempo_clasificacion = [float(n) for n in f.readline().split()][0]
 					y_true = []
 					y_pred = []
 					i = 1
-					for calsificacion in range(0,int(cant_imagenes_test)):
+					for calsificacion in range(0,cant_imagenes_test):
 						try:
-							print(str(i) + " de " + cant_imagenes_test)
 							i +=1
-							#print("esto deberia ser x, y")
-							print(f.readline().split())
-							# x, y = [int(n) for n in f.readline().split()]
-							# print(x, y)
-							# y_true.append(x)
-							# y_pred.append(y)
+							x, y = [int(n) for n in f.readline().split()]
+							y_true.append(x)
+							y_pred.append(y)
 						except:
-							print("error occured in line " )#+ str(i))
+							print("falla en la itereacion de resultados")
 							sys.exit(1)
-					# confMatrix = confusion_matrix(y_true,y_pred,labels)
-					# precision_recall_fscore_support = sklearn.metrics.precision_recall_fscore_support(y_true, y_pred, 1.0, labels)
-					# r = Resultado(tiempo_autovectores, tiempo_transformaciones, tiempo_clasificacion, precision_recall_fscore_support, confMatrix)
-					# key = alfa+'_'+k_vecinos+'_'+metodo+'_'+folds_k+'_'+numTest
-					# resultados.put(key, r)
+					r = Resultado(alfa, k_vecinos, metodo, folds_k, tiempo_autovectores, tiempo_transformaciones, tiempo_clasificacion, y_true, y_pred)
+					resultados.append(r)
 	return resultados
 
 def leerArchivoResultado(alfa, folds_k, n):
-		folds = kfolds(folds_k, n)
-		numTest = 1
-		for fold in folds:
-			resultados = []
-			archivoResultado = 'results/test_'+str(alfa)+'_'+str(folds_k)+'_'+str(n)+'_'+str(numTest)+'.out'
-			print 'leyendo: ', archivoResultado 
-			resultados.append(readFile(archivoResultado, folds_k, n, numTest))
-			numTest += 1
-		promediarResultados(resultados)
+	resultadosArchivo = []
+	folds = kfolds(folds_k, n)
+	numTest = 1
+	for fold in folds:
+		archivoResultado = 'results/test_'+str(alfa)+'_'+str(folds_k)+'_'+str(n)+'_'+str(numTest)+'.out'
+		print 'leyendo: ', archivoResultado 
+		resultadosArchivo += readFile(archivoResultado, folds_k)
+		numTest += 1
+	return resultadosArchivo
 
-def promediarPorFold(cant_alfas, cant_vecinos, cant_imagenes_test):
-	resultadosTotales = []
-	for alfa in alfas:
-		for vecino in vecinos:
-			for metodo in metodos:
-				metodos = []
-				for fold in folds:
-					resultadosFold = []
-					for numTest in tests:
-						key = alfa+'_'+vecino+'_'+metodo+'_'+fold+'_'+numTest
-						#tengo que tener folds veces cada hoja, y promediar entre ellas.
-						resultadosFold.append(resultados[key])
-						#al final tengo que tener un arbol estandar, pero con una lista de resultados en el lugar de las hojas que habia antes que eran un solo resultado.
-						#en esas hojas promedio esas listas.
-						#termina quedando un arbol estandar de resultados
-						#muestro los resultados
-					resultadosTotales.append(promediarResultados(resultadosFold))
+def promediarPorFold(resultadosParciales):
+	resultadosTotales = {}
+	promediar = {}
+	for resultado in resultadosParciales:
+		key = str(resultado.alfa)+" "+str(resultado.k_vecinos)+" "+str(resultado.metodo)+" "+str(resultado.folds_k)
+		if promediar.get(key, 0) == 0:
+			promediar[key] = []
+		promediar[key].append(resultado)
+	for key in promediar.keys():
+		resultadosTotales[key] = promediarResultados(promediar[key])
+	return resultadosTotales
 
 def promediarResultados(resultados):
 	tiempo_autovectores = 0
 	tiempo_transformaciones = 0
 	tiempo_clasificacion = 0
-	precision_recall_fscore_support = 0
-	confMatrix = 0
+	y_true = []
+	y_pred = []
 	for resultado in resultados:
 		tiempo_autovectores += resultado.tiempo_autovectores
 		tiempo_transformaciones += resultado.tiempo_transformaciones
 		tiempo_clasificacion += resultado.tiempo_clasificacion
-		precision_recall_fscore_support += resultado.precision_recall_fscore_support
-		confMatrix += resultado.confMatrix
+		y_true += resultado.y_true
+		y_pred += resultado.y_pred
 	tiempo_autovectores / len(resultados)
 	tiempo_transformaciones / len(resultados)
 	tiempo_clasificacion / len(resultados)
-	precision_recall_fscore_support / len(resultados)
-	confMatrix / len(resultados)
+	r = Resultado(resultados[0].alfa, resultados[0].k_vecinos, resultados[0].metodo, resultados[0].folds_k, tiempo_autovectores, tiempo_transformaciones, tiempo_clasificacion, y_true, y_pred)
+	return r
 
 def kfolds(k, n):
 	num_folds = k
@@ -147,15 +129,59 @@ def kfolds(k, n):
 	return trainings
 
 def leerResultados(alfas, folds, n):
+	resultadosParciales = []
 	for alfa in alfas:
 		for folds_k in folds:
-			leerArchivoResultado(alfa, folds_k, n)
+			resultadosParciales += leerArchivoResultado(alfa, folds_k, n)
+	resultadosTotales = promediarPorFold(resultadosParciales)
+	return resultadosTotales
+
+def cumpleRestricciones(key, restricciones):
+	rest_alfa, rest_k_vecinos, rest_metodo, rest_folds_k  = restricciones.split()
+	alfa, k_vecinos, metodo, folds_k  = key.split()
+	res = True
+	res &= ((rest_alfa == "*") or (rest_alfa == alfa))
+	res &= ((rest_k_vecinos == "*") or (rest_k_vecinos == k_vecinos))
+	res &= ((rest_folds_k == "*") or (rest_folds_k == folds_k))
+	res &= ((rest_metodo == "*") or (rest_metodo == metodo))
+	return res
+
+def graficarResultados(resultadosTotales,restricciones):
+	graficar = [[],[],[],[]]
+	labels = ["alfa", "k_vecinos", "metodo", "folds_k"]
+	datoAMostrar = 0
+	for rest in restricciones.split():
+		if rest == "*":
+			break
+		datoAMostrar+=1
+	for key in resultadosTotales.keys():
+		if(cumpleRestricciones(key,restricciones)):
+			y_true = resultadosTotales[key].y_true
+			y_pred = resultadosTotales[key].y_pred
+			alfa = resultadosTotales[key].alfa
+			k_vecinos = resultadosTotales[key].k_vecinos
+			folds_k = resultadosTotales[key].folds_k
+			metodo = resultadosTotales[key].metodo
+			graficar[0].append((alfa, accuracy_score(y_true, y_pred, True)))
+			graficar[1].append((k_vecinos, accuracy_score(y_true, y_pred, True)))
+			graficar[2].append((metodo, accuracy_score(y_true, y_pred, True)))
+			graficar[3].append((folds_k, accuracy_score(y_true, y_pred, True)))
+	graficar[datoAMostrar].sort(key=lambda tup: tup[0])
+	plt.scatter(*zip(*graficar[datoAMostrar]))
+	plt.ylabel('Precision')
+	plt.xlabel(labels[datoAMostrar])
+	plt.show() 
 
 def main(argv):
-	alfas = [60]
-	folds = [2, 4, 6, 8]
+	alfas = [100]
+	folds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 	n = 10
-	leerResultados(alfas, folds, n)
+	#restricciones = "alfa k_vecinos metodo k_folds"
+	restricciones = "20 2 2 *"
+	#folds = [2, 4, 6, 8]
+	n = 10
+	resultados = leerResultados(alfas, folds, n)
+	graficarResultados(resultados,restricciones)
 
 
 if __name__ == "__main__":
