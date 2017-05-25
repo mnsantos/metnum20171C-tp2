@@ -11,7 +11,7 @@ import numpy as np
 from numpy import ravel, reshape, swapaxes
 import scipy.io
 from sklearn import svm
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from random import sample
 from collections import namedtuple
 
@@ -148,7 +148,10 @@ def cumpleRestricciones(key, restricciones):
 
 def graficarResultados(resultadosTotales,restricciones):
 	graficar = [[],[],[],[]]
-	labels = ["alfa", "k_vecinos", "metodo", "folds_k"]
+	labels = range(1,42)
+	y_true = []
+	y_pred = []
+	labelsGrafico = ["alfa", "k_vecinos", "metodo", "folds_k"]
 	datoAMostrar = 0
 	for rest in restricciones.split():
 		if rest == "*":
@@ -162,24 +165,28 @@ def graficarResultados(resultadosTotales,restricciones):
 			k_vecinos = resultadosTotales[key].k_vecinos
 			folds_k = resultadosTotales[key].folds_k
 			metodo = resultadosTotales[key].metodo
-			graficar[0].append((alfa, accuracy_score(y_true, y_pred, True)))
-			graficar[1].append((k_vecinos, accuracy_score(y_true, y_pred, True)))
-			graficar[2].append((metodo, accuracy_score(y_true, y_pred, True)))
-			graficar[3].append((folds_k, accuracy_score(y_true, y_pred, True)))
-	graficar[datoAMostrar].sort(key=lambda tup: tup[0])
-	plt.scatter(*zip(*graficar[datoAMostrar]))
-	plt.ylabel('Precision')
-	plt.xlabel(labels[datoAMostrar])
-	plt.show() 
+			graficar[0].append((alfa, precision_recall_fscore_support(y_true, y_pred, average='micro')[0]))
+			graficar[1].append((k_vecinos, precision_recall_fscore_support(y_true, y_pred, average='micro')[0]))
+			graficar[2].append((metodo, precision_recall_fscore_support(y_true, y_pred, average='micro')[0]))
+			graficar[3].append((folds_k, precision_recall_fscore_support(y_true, y_pred, average='micro')[0]))
+	if datoAMostrar < 4:
+		graficar[datoAMostrar].sort(key=lambda tup: tup[0])
+		plt.scatter(*zip(*graficar[datoAMostrar]))
+		plt.ylabel('Precision')
+		plt.xlabel(labelsGrafico[datoAMostrar])
+		plt.show()
+	else:
+		confMatrix = confusion_matrix(y_true,y_pred,labels)
+		plot_confusion_matrix(confMatrix, labels, False, restricciones)
+		plt.show()
 
 def main(argv):
 	alfas = [100]
-	folds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-	n = 10
-	#restricciones = "alfa k_vecinos metodo k_folds"
-	restricciones = "20 2 2 *"
+	folds = [2, 3, 4, 5, 6, 7, 8, 9]
 	#folds = [2, 4, 6, 8]
 	n = 10
+	#restricciones = "alfa k_vecinos metodo k_folds"
+	restricciones = "`* 2 2 6"
 	resultados = leerResultados(alfas, folds, n)
 	graficarResultados(resultados,restricciones)
 

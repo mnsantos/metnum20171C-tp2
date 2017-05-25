@@ -21,11 +21,14 @@ class PCA {
         map<int, vector< vector<double> > > imagenesTransformadas;
         int alfa;
         vector<int> labels;
+        map<int, double> distanciaLimite;
 
         //metodos privados auxiliares
         Matriz calcularX(Matriz& imagenes, vector<double>& media);
         vector<double> calcularMedia(Matriz& M);
         vector<double> tc(vector<double>& imagen, int alfa);
+        double maxDistEntreImagenes(int alfa_actual);
+        double maxDistPorPromedio(int alfa_actual);
 
         double distancia(vector<double>& xprima, vector<double>& imagenTransformada);
 };

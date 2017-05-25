@@ -80,6 +80,7 @@ vector< vector<double> > PCA::getAutovectores() {
 }
 
 PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores) {
+    map<int, double> distanciaLimite;
     clock_t inicio, final;
     inicio = clock();
     cout << "calculando media" << endl;
@@ -153,6 +154,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores
                 double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
                 //cout << "Total para alfa=" << alfa_actual << ": " << total << endl;
                 TIEMPOS_TRANSFORMACIONES[CORRIDA_ACTUAL].push_back(total);
+                maxDistPorPromedio(alfa_actual);
             }
             CORRIDA_ACTUAL ++;
         }
@@ -160,8 +162,9 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores
         for (int j=0; j<imagenes.filas(); j++){
             //aplico transformacion caracteristica a cada una de las imagenes de base
             imagenesTransformadas[alfa].push_back(tc(imagenes[j], alfa));
-        }         
-    }  
+        }
+        maxDistPorPromedio(alfa);
+    }
 }
 
 vector<double> PCA::tc(vector<double>& imagen, int alfa) {
@@ -180,6 +183,13 @@ int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) 
         pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
     }
     sort(pairs.begin(), pairs.end());
+    /*if (pairs[0].first > distanciaLimite[alfa])
+    {
+        cout << "la imagen no es una cara" << endl;
+        ;
+        return -1;
+    }*/
+    //cout << "distancia de la imagen test: " << pairs[0].first << endl;
     map<int, int> reps;
     map<int, int>::iterator it;
     for (int i=0; i<vecinos; i++) {
@@ -199,6 +209,7 @@ int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) 
             max_label = it -> first;
         }
     }
+    //cout << "La imagen es: " << max_label << endl;
     return max_label;
 }
 
@@ -210,6 +221,13 @@ int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) 
         pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
     }
     sort(pairs.begin(), pairs.end());
+    /*if (pairs[0].first > distanciaLimite[alfa])
+    {
+        cout << "la imagen no es una cara" << endl;
+        ;
+        return -1;
+    }*/
+    //cout << "distancia de la imagen test: " << pairs[0].first << endl;
     map<int, double> weights;
     map<int, double>::iterator it;
     for (int i=0; i<vecinos; i++) {
@@ -229,10 +247,52 @@ int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) 
             max_label = it -> first;
         }
     }
+    //cout << "La imagen es: " << max_label << endl;
     return max_label;
 }
 
 double PCA::distancia(vector<double>& xprima, vector<double>& imagenTransformada) {
     vector<double> resta = restarVectores(xprima, imagenTransformada);
     return norma_2(resta);
+}
+
+double PCA::maxDistEntreImagenes(int alfa_actual){
+    double maxDist = 0;
+    vector<vector<double> > imagenes = imagenesTransformadas[alfa_actual];
+    for (int i = 0; i < imagenes.size(); ++i)
+    {
+        for (int j = 0; j < imagenes.size(); ++j)
+        {
+            double distanciaActual = distancia(imagenes[i], imagenes[j]);
+            if (distanciaActual >= maxDist)
+            {
+                maxDist = distanciaActual;
+                cout << "imagen 1: " << labels[i] << "imagen 2: " << labels[j] << endl;
+            }
+        }
+    }
+    //cout << "Distancia Límite: " << maxDist << endl;
+    distanciaLimite[alfa_actual] = maxDist;
+    return maxDist;
+}
+
+double PCA::maxDistPorPromedio(int alfa_actual){
+    double maxDist = 0;
+    vector<vector<double> > imagenes = imagenesTransformadas[alfa_actual];
+    vector<double> imagenPromedio = vector<double>(imagenes[0].size());
+    for (int i = 0; i < imagenes.size(); ++i)
+    {
+        for (int j = 0; j < imagenPromedio.size(); ++j)
+        {
+            imagenPromedio[j] += (imagenes[i][j] / imagenes.size());
+        }
+    }
+    for (int j = 0; j < imagenes.size(); ++j)
+        {
+            double distanciaActual = distancia(imagenPromedio, imagenes[j]);
+            maxDist += (distanciaActual / imagenes.size());
+        }
+    //cout << "Distancia Límite: " << maxDist << endl;
+    distanciaLimite[alfa_actual] = maxDist;
+    return maxDist;
 }
