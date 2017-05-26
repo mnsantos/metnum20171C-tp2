@@ -118,13 +118,23 @@ def promediarResultados(resultados):
 	r = Resultado(resultados[0].alfa, resultados[0].k_vecinos, resultados[0].metodo, resultados[0].folds_k, tiempo_autovectores, tiempo_transformaciones, tiempo_clasificacion, y_true, y_pred)
 	return r
 
+# def kfolds(k, n):
+# 	num_folds = k
+# 	subset_size = n/num_folds
+# 	trainings = []
+# 	for i in range(0, k):
+# 		training = np.array([True]*n)
+# 		training[i*subset_size:][:subset_size] = False
+# 		trainings.append(training)
+# 	return trainings
+
 def kfolds(k, n):
-	num_folds = k
-	subset_size = n/num_folds
+	subset_size = k
 	trainings = []
-	for i in range(0, k):
+	for i in range(0, n-k):
 		training = np.array([True]*n)
-		training[i*subset_size:][:subset_size] = False
+		for x in range(i,i+subset_size):
+			training[x] = False
 		trainings.append(training)
 	return trainings
 
@@ -180,15 +190,43 @@ def graficarResultados(resultadosTotales,restricciones):
 		plot_confusion_matrix(confMatrix, labels, False, restricciones)
 		plt.show()
 
+def graficarResultadosMultiK(resultadosTotales,restricciones):
+	colours = ['b','g','r','c','m','y','k','w']
+	y_true = []
+	y_pred = []
+	folds = {}
+	datoAMostrar = 0
+	rest_alfa, rest_k_vecinos, rest_metodo, rest_folds_k  = restricciones.split()
+	for key in resultadosTotales.keys():
+		alfa, k_vecinos, metodo, folds_k  = key.split()
+		if (rest_k_vecinos == k_vecinos and rest_metodo == metodo):
+			y_true = resultadosTotales[key].y_true
+			y_pred = resultadosTotales[key].y_pred
+			if folds.get(folds_k, 0) == 0:
+				folds[folds_k] = []
+			folds[folds_k].append((alfa, precision_recall_fscore_support(y_true, y_pred, average='micro')[0]))
+	colour = 0
+	title = 'kfold: '
+	for key in ['2', '3', '4', '5', '6', '7', '8', '9']:
+		folds[key].sort(key=lambda tup: tup[0])
+		plt.scatter(*zip(*folds[key]), c=colours[colour])
+		title += key +' = ' + colours[colour] + ', '
+		colour+=1
+	plt.title(title)
+	plt.ylabel('Precision')
+	plt.xlabel('Alfa')
+	plt.show()
+
 def main(argv):
-	alfas = [100]
-	folds = [2, 3, 4, 5, 6, 7, 8, 9]
+	alfas = [30]
+	folds = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 	#folds = [2, 4, 6, 8]
 	n = 10
 	#restricciones = "alfa k_vecinos metodo k_folds"
-	restricciones = "`* 2 2 6"
+	restricciones = "* 2 2 *"
 	resultados = leerResultados(alfas, folds, n)
-	graficarResultados(resultados,restricciones)
+	#graficarResultados(resultados,restricciones)
+	graficarResultadosMultiK(resultados,restricciones)
 
 
 if __name__ == "__main__":
