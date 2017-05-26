@@ -154,7 +154,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores
                 double total = (double(final - inicio) / CLOCKS_PER_SEC * 1000);
                 //cout << "Total para alfa=" << alfa_actual << ": " << total << endl;
                 TIEMPOS_TRANSFORMACIONES[CORRIDA_ACTUAL].push_back(total);
-                maxDistPorPromedio(alfa_actual);
+                //maxDistPorPromedio(alfa_actual);
             }
             CORRIDA_ACTUAL ++;
         }
@@ -163,7 +163,7 @@ PCA::PCA(Matriz& imagenes, vector<int>& labels, int alfa, int metodoAutovectores
             //aplico transformacion caracteristica a cada una de las imagenes de base
             imagenesTransformadas[alfa].push_back(tc(imagenes[j], alfa));
         }
-        maxDistPorPromedio(alfa);
+        //maxDistPorPromedio(alfa);
     }
 }
 
@@ -183,10 +183,14 @@ int PCA::clasificarUsandoMetodo1(vector<double> &imagen, int alfa, int vecinos) 
         pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
     }
     sort(pairs.begin(), pairs.end());
-    /*if (pairs[0].first > distanciaLimite[alfa])
+/*    if (pairs[0].first > distanciaLimite[alfa] && pairs[0].first < (3.0/2.0) * distanciaLimite[alfa])
+    {
+        cout << "la cara no pertenece a la base" << endl;
+        return -1;
+    }
+    if (pairs[0].first > (3.0/2.0) * distanciaLimite[alfa])
     {
         cout << "la imagen no es una cara" << endl;
-        ;
         return -1;
     }*/
     //cout << "distancia de la imagen test: " << pairs[0].first << endl;
@@ -221,10 +225,14 @@ int PCA::clasificarUsandoMetodo2(vector<double> &imagen, int alfa, int vecinos) 
         pairs.push_back(make_pair(distancia(xprima, imagenesTransformadas[alfa][i]), labels[i]));
     }
     sort(pairs.begin(), pairs.end());
-    /*if (pairs[0].first > distanciaLimite[alfa])
+/*    if (pairs[0].first > distanciaLimite[alfa] && pairs[0].first < (1.1) * distanciaLimite[alfa])
+    {
+        cout << "la cara no pertenece a la base" << endl;
+        return -1;
+    }
+    if (pairs[0].first > (1.1) * distanciaLimite[alfa])
     {
         cout << "la imagen no es una cara" << endl;
-        ;
         return -1;
     }*/
     //cout << "distancia de la imagen test: " << pairs[0].first << endl;

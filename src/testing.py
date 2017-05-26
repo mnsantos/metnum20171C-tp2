@@ -66,22 +66,32 @@ def ejecutarArchivosTesting(alphas, folds, n):
 		for folds_k in folds:
 			callTestingFile(alpha, folds_k, n)
 
+# def kfolds(k, n):
+# 	subset_size = k
+# 	trainings = []
+# 	for i in range(0, n-k):
+# 		training = np.array([True]*n)
+# 		for x in range(i,i+subset_size):
+# 			training[x] = False
+# 		trainings.append(training)
+# 	return trainings
+
 def kfolds(k, n):
-	subset_size = k
+	num_folds = k
+	subset_size = n/num_folds
 	trainings = []
-	for i in range(0, n-k):
+	for i in range(0, k):
 		training = np.array([True]*n)
-		for x in range(i,i+subset_size):
-			training[x] = False
+		training[i*subset_size:][:subset_size] = False
 		trainings.append(training)
 	return trainings
 
 def main(argv):
-	alphas = [30]
-	folds = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+	alfas = [30]
+	folds = [7]
 	n = 10
-	crearArchivosTesting(alphas, folds, n)
-	ejecutarArchivosTesting(alphas, folds, n)
+	crearArchivosTesting(alfas, folds, n)
+	ejecutarArchivosTesting(alfas, folds, n)
 
 
 if __name__ == "__main__":
